@@ -11,6 +11,7 @@ Serviço de geração de relatórios em CSV desenvolvido com Spring Boot, focado
 - [Instalação e Configuração](#instalação-e-configuração)
 - [Uso](#uso)
 - [API Endpoints](#api-endpoints)
+- [Testes de Performance](#testes-de-performance)
 - [Arquitetura](#arquitetura)
 - [Estrutura do Projeto](#estrutura-do-projeto)
 
@@ -164,6 +165,115 @@ POST /relatorios/virtual/BR
 {
   "message": "Platform relatório gerado para a região: BR"
 }
+```
+
+## ⚡ Testes de Performance
+
+### Apache Bench (ab)
+
+O **Apache Bench** (`ab`) é uma ferramenta de linha de comando para realizar testes de carga e performance em servidores HTTP. Ela permite medir o desempenho de uma aplicação web simulando múltiplas requisições simultâneas.
+
+#### O que é Apache Bench?
+
+Apache Bench é uma ferramenta simples e eficiente para:
+- Testar a capacidade de resposta de servidores web
+- Medir o throughput (requisições por segundo)
+- Avaliar o tempo de resposta sob carga
+- Comparar diferentes configurações e implementações
+
+#### Parâmetros dos Comandos
+
+- `-n 300`: Número total de requisições a serem executadas (300 requisições)
+- `-c 100`: Número de requisições concorrentes (100 requisições simultâneas)
+- `-m POST`: Método HTTP a ser utilizado (POST)
+- URL: Endpoint a ser testado
+
+#### Comandos de Benchmark
+
+Execute os seguintes comandos para comparar o desempenho das três estratégias de processamento:
+
+**1. Teste do Processamento Síncrono:**
+
+```bash
+ab -n 300 -c 100 -m POST http://localhost:8080/relatorios/BR
+```
+
+Este comando testa o endpoint síncrono, onde cada requisição é processada sequencialmente. Espere ver tempos de resposta mais altos e possíveis timeouts devido à limitação de threads do servidor.
+
+**2. Teste do Processamento com Thread Pool:**
+
+```bash
+ab -n 300 -c 100 -m POST http://localhost:8080/relatorios/platform/BR
+```
+
+Este comando testa o endpoint que utiliza um pool fixo de 5 threads. O desempenho será melhor que o síncrono, mas ainda limitado pelo número de threads disponíveis.
+
+**3. Teste do Processamento com Virtual Threads:**
+
+```bash
+ab -n 300 -c 100 -m POST http://localhost:8080/relatorios/virtual/BR
+```
+
+Este comando testa o endpoint que utiliza virtual threads do Java 21. Espere ver o melhor desempenho, com capacidade de processar muitas requisições simultâneas sem bloqueio.
+
+#### Interpretando os Resultados
+
+O Apache Bench fornece métricas importantes:
+
+- **Requests per second**: Número de requisições processadas por segundo
+- **Time per request**: Tempo médio por requisição
+- **Time per request (mean, across all concurrent requests)**: Tempo médio considerando concorrência
+- **Transfer rate**: Taxa de transferência de dados
+- **Failed requests**: Número de requisições que falharam
+
+#### Instalação do Apache Bench
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get install apache2-utils
+```
+
+**macOS:**
+```bash
+# Já vem instalado ou via Homebrew
+brew install httpd
+```
+
+**Windows:**
+```bash
+# Via Chocolatey
+choco install apache-httpd
+
+# Ou baixe do site oficial do Apache
+```
+
+#### Dicas para Testes
+
+1. **Execute os testes em sequência** para comparar os resultados
+2. **Aguarde alguns segundos** entre os testes para evitar interferência
+3. **Monitore os logs da aplicação** para entender o comportamento
+4. **Ajuste os parâmetros** (`-n` e `-c`) conforme necessário para seu ambiente
+5. **Execute múltiplas vezes** e calcule a média para resultados mais precisos
+
+#### Exemplo de Saída
+
+```
+Server Software:        
+Server Hostname:        localhost
+Server Port:            8080
+
+Document Path:          /relatorios/BR
+Document Length:        45 bytes
+
+Concurrency Level:      100
+Time taken for tests:   15.234 seconds
+Complete requests:      300
+Failed requests:        0
+Total transferred:      67500 bytes
+Requests per second:    19.67 [#/sec] (mean)
+Time per request:       5081.333 [ms] (mean)
+Time per request:       50.813 [ms] (mean, across all concurrent requests)
+Transfer rate:          4.32 [Kbytes/sec] received
 ```
 
 ## 🏗 Arquitetura
